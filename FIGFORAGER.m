@@ -1,107 +1,135 @@
 %% FIGFORAGER
+%==========================================================================
+clc; close all; clear; rng('shuffle');
+P.home  = 'C:\Path\To\Project\Folder';
+cd(P.home);
+P.fun   = [P.home filesep 'figs'];
+addpath( join(string(struct2cell(P)),pathsep,1) )
+cd(P.home); P.f = filesep;
 
-clc; close all; clear
+
+
+
+%% SELECT AN IMAGE OF A FIGURE
+%==========================================================================
+clearvars -except P
+
+
 
 [FileName,PathName,FilterIndex] = uigetfile({'*'},'Select Image File');
 
-FILE.FileName = FileName;
-FILE.PathName = PathName;
-FILE.FullPath = [PathName FileName];
+P.FigFileName = FileName;
+P.FigPathName = PathName;
+P.FigFullPath = [PathName FileName];
 
 
-RGB = imread(FILE.FullPath);
-
-IMG = imnorm(FILE.FullPath);
-
-info.szRGB = size(RGB);
-info.szIMG = size(IMG);
-info.Ratio = info.szIMG(2)/info.szIMG(1);
 
 
-clearvars -except FILE RGB IMG info
 
 
-%% DISPLAY IMAGE
-
-clc; close all
-fh1 = figure('Units','normalized','OuterPosition',[.01 .04 .95 .93],'Color','w');
-ax1 = axes('Position',[.05 .05 .9 .9],'Color','none','YDir','reverse');
+%% READ IMAGE OF FIGURE
+%==========================================================================
+clc; close all; clearvars -except P
 
 
-% ph1 = imshow(RGB,'Border','tight'); pause(1)
-ph1 = imagesc(IMG);
-colormap bone
-axis equal; axis tight
 
-fig.fh1 = fh1;
-fig.ax1 = ax1;
-fig.ph1 = ph1;
+RGB = imread(P.FigFullPath);
 
-clearvars -except FILE RGB IMG info fig
+IMG = imnorm(P.FigFullPath);
+
+%imshow(RGB)
+
+
+INFO.szRGB = size(RGB);
+INFO.szIMG = size(IMG);
+
+INFO.WidthByHeightRatio = size(IMG,2)/size(IMG,1);
+
+
+
+
+
+
 
 
 %% GET MIN AND MAX VALUES FOR EACH AXIS
+%==========================================================================
+clc; close all; clearvars -except P RGB IMG INFO
+
+
+close all; imshow(RGB,'InitialMagnification','fit')
+truesize([700 1200]);
 
 prompt = {'Enter X-axis min value displayed on graph:',...
           'Enter X-axis max value displayed on graph:',...
           'Enter Y-axis min value displayed on graph:',...
           'Enter Y-axis max value displayed on graph:'};
 dlg_title = 'Input'; num_lines = 1;
-def = {'0','100','0','100'};
+def = {'0','1','0','1'};
 answer = inputdlg(prompt,dlg_title,num_lines,def);
 axvals = str2double(answer);
 
 
-info.axvals = axvals;
+INFO.axvals = axvals;
 
-clearvars -except FILE RGB IMG info fig
+
 
 
 %% DRAW AXES
+%==========================================================================
+clc; close all; clearvars -except P RGB IMG INFO
 
-disp('Use pointer to draw line from x-axis min to x-axis max')
-% [Xx,Xy] = ginput(2);
-h = imline(fig.ax1);
-xax = getPosition(h);
+% Get computer monitor screen dimensions (UI.ScreenSize)
+UI=groot;
+
+ss = [ 50, 50, round(UI.ScreenSize(3)*.85), round(UI.ScreenSize(4)*.85) ];
+
+fig = figure('Units','pixels','Position',ss,'Color','w');
+ax1 = axes('Position',[.12 .14 .82 .8],'Color','none');
+ph1 = image(RGB); axis equal; axis off;
 
 
 
-disp('Use pointer to draw line from y-axis min to y-axis max')
-% [Yx,Yy] = ginput(2);
-h = imline(fig.ax1);
-yax = getPosition(h);
+disp('Use mouse to draw a line along the full x-axis (min to max)')
+AX.X = drawline(ax1);
+
+disp('Use mouse to draw a line along the full y-axis (min to max)')
+AX.Y = drawline(ax1);
+
+AX.Xpos = AX.X.Position;
+AX.Ypos = AX.Y.Position
 
 
 
 disp('Draw smallest possible box around data points;')
-disp('try to avoid including axes ticks and other decor')
-% hROI = imfreehand(fig.ax1, 'Closed',1);
-% pos  = getPosition(hROI);
-hROI = imrect(fig.ax1);
-pos  = getPosition(hROI);
+disp('  (try to avoid including axes ticks and other decor)')
+AX.R = drawrectangle(ax1);
 
-
-ax.xax = xax;
-ax.yax = yax;
-ax.pos = pos;
+AX.POS = AX.R.Position;
 
 
 clc
-disp('X-axis: ');     disp(ax.xax); disp(' ');
-disp('Y-axis: ');     disp(ax.yax); disp(' ');
-disp('Data bounds:'); disp(ax.pos); disp(' ');
+disp('X-axis: ');     disp(AX.X.Position); disp(' ');
+disp('Y-axis: ');     disp(AX.Y.Position); disp(' ');
+disp('Data bounds:'); disp(AX.POS); disp(' ');
 
-clearvars -except FILE RGB IMG info fig ax
+
+
 
 
 
 
 
 %% IDENTIFY DATAPOINTS
+%==========================================================================
+clc; clearvars -except P RGB IMG INFO AX
+
+
+
 
 % Get data from inside bounds
 
-xywh = ax.pos;
+xywh = AX.POS;
 x = xywh(1);
 y = xywh(2);
 w = xywh(3);
@@ -167,10 +195,11 @@ end
 fig.fh2 = fh2;
 fig.ax2 = ax2;
 
-clearvars -except FILE RGB IMG info fig ax IMB IML IMW IMM
+
 
 
 %% DISPLAY IMAGE
+clc; close all; clearvars -except P RGB IMG INFO AX IMB IML IMW IMM
 
 clc; try close(fh2);catch;end
 clc; try close(fh10);catch;end
@@ -181,7 +210,10 @@ ax10 = axes('Position',[.05 .05 .9 .9],'Color','none','YDir','reverse');
 % ph1 = imshow(RGB,'Border','tight'); pause(1)
 ph10 = imagesc(IMG);
 colormap gray
-axis equal; axis tight
+axis equal
+axis tight
+axis off
+
 
 
 hold on
@@ -196,11 +228,12 @@ fig.ax10 = ax10;
 fig.ph10 = ph10;
 
 
-clearvars -except FILE RGB IMG info fig ax IMB IML IMW IMM
+
 
 
 
 %% SCALE POINTS TO DRAWN AXES
+clc; close all; clearvars -except P RGB IMG INFO AX IMB IML IMW IMM
 
 lintrans = @(x,a,b,c,d) (c*(1-(x-a)/(b-a)) + d*((x-a)/(b-a)));
 
@@ -209,8 +242,8 @@ fx = @(x) mean(x);
 posi = cell2mat(cellfun(fx,IMB,'UniformOutput',0));
 
 
-basebottom = info.szIMG(1) - mean(ax.xax(:,2));
-baseleft   = mean(ax.yax(:,1));
+basebottom = INFO.szIMG(1) - mean(AX.Xpos(:,2));
+baseleft   = mean(AX.Ypos(:,1));
 
 pos = [posi(:,1)-basebottom  posi(:,2)-baseleft];
 
@@ -220,11 +253,11 @@ posy = zeros(size(posi,1),1);
 
 for nn = 1:size(posi,1)
 
-    posx(nn) = lintrans(posi(nn,2), ax.xax(1,1), ax.xax(2,1),...
-                        info.axvals(1),info.axvals(2));
+    posx(nn) = lintrans(posi(nn,2), AX.Xpos(1,1), AX.Xpos(2,1),...
+                        INFO.axvals(1),INFO.axvals(2));
 
-    posy(nn) = lintrans(posi(nn,1), ax.yax(1,2), ax.yax(2,2),...
-                        info.axvals(3),info.axvals(4));
+    posy(nn) = lintrans(posi(nn,1), AX.Ypos(1,2), AX.Ypos(2,2),...
+                        INFO.axvals(3),INFO.axvals(4));
 
 end
 pos = [posx posy];
@@ -236,170 +269,17 @@ clc; try close(fh2);catch;end
 clc; try close(fh10);catch;end
 clc; try close(fh20);catch;end
 clc; try close(fh21);catch;end
-fh20 = figure('Units','normalized','OuterPosition',[.01 .04 .7 .8],'Color','w');
-ax20 = axes('Position',[.05 .05 .9 .9],'Color','none');
+fh20 = figure('Units','normalized','OuterPosition',[.01 .04 .7 .85],'Color','w');
+ax20 = axes('Position',[.10 .12 .8 .8],'Color','none');
 
 ph20 = scatter(pos(:,1),pos(:,2),150,'filled');
-ylim([info.axvals(3:4)])
-xlim([info.axvals(1:2)])
+ylim([INFO.axvals(3:4)])
+xlim([INFO.axvals(1:2)])
 grid on
 ax20.FontSize = 16;
 ax20.FontWeight = 'bold';
 
-
-fh21=figure('Units','normalized','OuterPosition',[.70 .04 .15 .8],'Color','w','MenuBar','none');
+fh21=figure('Units','normalized','OuterPosition',[.70 .04 .15 .85],'Color','w','MenuBar','none');
 t = uitable(fh21,'Data',[{'X','Y'}; num2cell(pos)],...
-'Units','normalized','Position',[.01 .01 .98 .95]);
-
-
-% save('pos.mat','pos','posx','posy')
-% load('pos.mat')
-
-
-%% MAKE POINTS MONOTONIC ASCENDING AND INTERPOLATE DRAWN POINTS
-%{
-posx = sort(posx);
-
-[X,iposx,iX] = unique(posx);
-Y = posy(iposx);
-
-xv = X(1):1/(numel(X)*10):X(end);
-
-yv = interp1(X,Y,xv);
-
-plot(xv,yv)
-
-
-%% RESAMPLE TO DESIRED SAMPLE RATE OR TOTAL NUMBER OF SAMPLES
-
-pospairs = numel(xv);
-currentsamplerate = pospairs / (axvals(2) - axvals(1));
-
-spf1 = sprintf('\n the pos vector currently contains % 2.0f xy pairs \n',pospairs);
-spf2 = sprintf('\n that is approximately % 2.1f pairs per graph unit \n',currentsamplerate);
-
-h = msgbox({spf1, spf2});
-uiwait(h)
-
-% Construct a questdlg with three options
-choice = questdlg('Which value do you want to specify for a sampling rate', ...
-	'Sampling Rate', ...
-	'Samples per unit','Total samples','Total samples');
-% Handle response
-switch choice
-    case 'Samples per unit'
-        disp([choice ' was the choice, maybe this will work.'])
-        sr = 1;
-    case 'Total samples'
-        disp([choice ' is a good choice.'])
-        sr = 0;
-end
-
-prompt = {['Enter desired ',choice]};
-dlg_title = 'Input'; num_lines = 1;
-if sr
-def = {int2str(currentsamplerate)};
-else
-def = {int2str(pospairs)};
-end
-answer = inputdlg(prompt,dlg_title,num_lines,def);
-newsr = str2double(answer);
-
-
-if sr
-    
-    
-    axrange = axvals(2) - axvals(1);
-    
-    nsr = newsr * axrange;
-    
-    nx = numel(xv);
-
-    x = xv(1:nx/nsr:end);
-
-    if numel(x) > nsr
-
-        x(end+1-(numel(x) - nsr):end) = [];
-
-    elseif numel(x) < nsr
-
-        x = xv(1:floor(nx/nsr):end);
-        x(end+1-(numel(x) - nsr):end) = [];
-
-    end
-    
-    
-else
-    
-    nsr = newsr;
-
-    nx = numel(xv);
-
-    x = xv(1:nx/nsr:end);
-
-    if numel(x) > nsr
-
-        x(end+1-(numel(x) - nsr):end) = [];
-
-    elseif numel(x) < nsr
-
-        x = xv(1:floor(nx/nsr):end);
-        x(end+1-(numel(x) - nsr):end) = [];
-
-    end
-
-end
-
-
-y = interp1(xv,yv,x);
-
-
-fh3=figure('Units','normalized','OuterPosition',[.05 .05 .8 .9],'Color','w');
-hax3 = axes('Position',[.05 .05 .9 .9],'Color','none','XTick',[]);
-plot(x,y);
-
-
-xy = [x;y]';
-
-disp(' ')
-disp('''xy'' is your new variable of xy pairs,')
-spf1 = sprintf(' and has % 2.0f xy pairs \n',numel(xy(:,1)));
-disp(spf1)
-
-
-
-%%
-
-save('xy.mat','xy')
-load('xy.mat')
-
-
-%%
-
-xxyy = [xy(1:1000:end,1),xy(1:1000:end,2)];
-
-plot(xxyy(1:5:end,1),xxyy(1:5:end,2))
-
-
-xxyy(:,1) = xxyy(:,1)-(60+1.723076923076922)
-
-
-se = xxyy.*0 + .1;
-
-se = se + (linspace(0,.1,420))'
-
-
-sm = se + rand(420,1).*.05
-
-sm = sm + (linspace(0,.1,420))';
-
-sm = sm + rand(420,1).*.05
-
-
-xxy = sqrt(xxyy(:,2)) + rand(420,1).*.05
-
-sm = sm./2
-
-%}
-%%
+'Units','normalized','Position',[.03 .01 .95 .95], 'FontSize', 11, 'FontName', 'Calibri');
 
